@@ -1,0 +1,11 @@
+numpy
+matplotlib
+pandas
+scipy
+shapely
+seaborn
+tabulate
+Jinja2
+streamlit
+tqdm
+# latex
