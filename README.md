@@ -1,7 +1,11 @@
 
 # instinct-jcas-simulator
 
-Software tool to evaluate the interplay between Communication and Sensing in Joint Communication and Sensing (JCAS) networks. Part of the SNS 6G Instinct European project.
+Software tool to evaluate the interplay between Communication and Sensing in large scale Joint Communication and Sensing (JCAS) networks.
+
+## About
+
+This simulator is part of the research activities in the **SNS 6G Instinct** European project, focusing on exploring the synergy between communication and sensing in next-generation JCAS networks. For more details, see the full project plan at [Instinct Joint Sensing and Communication](https://www.barkhauseninstitut.org/en/instinct-joint-sensing-and-communication-for-future-connectivity)
 
 ## Getting Started
 
@@ -62,11 +66,6 @@ Make sure Jupyter is installed in your virtual environment. If not, install it u
 ```
 pip install notebook
 ```
-
-## About
-
-This simulator is part of the research activities in the **SNS 6G Instinct** European project, focusing on exploring the synergy between communication and sensing in next-generation JCAS networks. For more details, see the full project plan at [Instinct Joint Sensing and Communication](https://www.barkhauseninstitut.org/en/instinct-joint-sensing-and-communication-for-future-connectivity)
-
 
 ## License
 

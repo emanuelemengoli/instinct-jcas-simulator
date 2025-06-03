@@ -159,7 +159,7 @@ class User(Obj):
         self.comm_sinrs = []
     
     def set_motion_params(self, scaler:float=1):
-        self.A = get_A_process(parameter=1)
+        self.A = get_A_process(parameter=0.9)
         self.noise_mean = np.zeros(shape=self.d)
         self.noise_cov = get_Z_process(parameter=scaler, dim=self.d)
     
