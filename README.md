@@ -1,25 +1,85 @@
 # JCAS Simulator
 
-A configurable, toroidal (periodic) joint communication-and-sensing (JCAS) network simulator: base stations, mobile UEs, and sensing objects on a Poisson or fixed-count network, with a Voronoi-tessellated coverage map, RT/Rayleigh-fading channel models, Kalman/Extended Kalman filtering, optional sector beamforming and TDD scheduling, and a separate simplified "non-captive" tracking model.
+This repository provides a configurable simulator for **joint communication and sensing
+(JCAS)** networks defined on a periodic (toroidal) spatial domain. Base stations, mobile
+user equipment (UE), and sensing objects (SO) are placed on a rectangular flat torus; a
+Voronoi tessellation defines cell coverage; every link is propagated through a physical
+channel model; and each sensing object is tracked with a Kalman or Extended Kalman
+filter. The simulator is intended for the controlled study of how the communication and
+sensing subsystems of a shared network interact.
 
-![JCAS network realization and Voronoi tessellation](images/readme_network_example.png)
+## Contents
 
-You can drive it two ways:
+- [Overview](#overview)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Interactive application](#interactive-application)
+  - [Notebook and Python API](#notebook-and-python-api)
+- [Simulation modes](#simulation-modes)
+- [Configuration](#configuration)
+- [Simulation output](#simulation-output)
+- [Repository structure](#repository-structure)
+- [Deployment](#deployment)
+- [Citation](#citation)
+- [License](#license)
 
-- **The interactive web app** (`simulator_interface.py`) — configure a scenario with sliders and dropdowns, run it, and explore the results in your browser. No Jupyter, no cloning required once it's deployed.
-- **The notebook** (`main.ipynb`) — the full configuration-driven Python API, for scripted experiments, channel-law ablations, and anything not exposed in the app's UI.
+## Overview
 
-## Quick start
+The simulator comprises the following components.
+
+- **Network generation.** Base stations are drawn from a homogeneous Poisson point
+  process, or fixed to a chosen count for controlled experiments. Each cell is then
+  populated with UEs and SOs, placed either uniformly or as a Gaussian cluster around the
+  serving base station.
+- **Geometry.** All spatial computation uses the rectangular flat-torus (minimum-image)
+  metric. The Voronoi tessellation, mobility models, filtering, beamforming, and handover
+  logic are periodic, which removes the edge effects that would otherwise bias
+  spatially aggregated statistics. The Euclidean metric is not supported.
+- **Mobility.** UEs and SOs follow a stationary, Gauss–Markov, or constant-speed motion
+  model, with state represented as position or as position and velocity.
+- **Channel.** Two physical channel models are provided: a ray-traced model (`rt`),
+  parameterised from a measurement-campaign fit, and a Rayleigh-fading power-law model
+  (`exponential`), given by `H · max(d_min, d)^(-alpha)` with `H ~ Exp(mean)`.
+  Transmit power, noise, bandwidth, and carrier frequency are shared across models, as is
+  the choice between one-way and two-way (monostatic-radar) sensing gain. Additional
+  channel models may be registered at run time through `register_channel_model`.
+- **Communication.** Each UE is served by a Lindley queue whose service rate depends on
+  the instantaneous SINR, yielding a per-cell workload time series.
+- **Sensing and filtering.** Observations are linear or radar-style (range, bearing, and
+  optionally range rate), with measurement noise that scales with SINR. These are
+  processed by a Kalman filter (linear observations) or an Extended Kalman filter
+  (nonlinear observations); the trace of the estimation-error covariance is used as the
+  sensing-uncertainty metric.
+- **Optional mechanisms.** Directional sector beamforming and a cyclic time-division
+  duplex (TDD) communication/sensing schedule may be enabled.
+- **Coupling metrics.** For each base station, the communication and sensing quantities
+  are averaged and then summarised by an *association ratio*,
+  `A(X, Y) = E[XY] / (E[X] · E[Y])`, together with the Pearson correlation, for the
+  interference, SINR, and queue-versus-covariance pairs. Values of the association ratio
+  above one indicate positive co-fluctuation across the network, values below one
+  indicate a trade-off, and independence yields one.
+
+Each simulation is fully determined by its `master_seed`, which drives a per-stream
+seeded random-number manager, so results are exactly reproducible.
+
+## Installation
+
+The simulator requires **Python 3.10 or newer**.
 
 ```bash
-git clone <this-repo-url>
-cd jcas_simulator
+git clone https://github.com/emanuelemengoli/instinct-jcas-simulator.git
+cd instinct-jcas-simulator
 ./setup.sh
 source .venv/bin/activate
-streamlit run simulator_interface.py
 ```
 
-`setup.sh` creates a `.venv` in the repo root and installs everything in `requirements.txt` (numpy, scipy, shapely, matplotlib, seaborn, Jupyter, pytest, Streamlit). It's safe to re-run — it reuses an existing `.venv` instead of recreating it. On Windows, run the equivalent manually:
+`setup.sh` creates a virtual environment (`.venv`) in the repository root and installs
+the dependencies listed in `requirements.txt` (NumPy, SciPy, Shapely, Matplotlib,
+seaborn, Jupyter, pytest, and Streamlit). It may be re-run safely, as it reuses an
+existing environment rather than recreating it. The interpreter used to create the
+environment can be overridden, for example `PYTHON_BIN=python3.12 ./setup.sh`.
+
+On Windows, the equivalent steps are:
 
 ```powershell
 python -m venv .venv
@@ -27,62 +87,188 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## The interactive app
+The package is not installed into the environment. Import `jcas_simulator` and run
+scripts or notebooks from the repository root.
+
+## Usage
+
+The simulator can be driven in two ways:
+
+- an **interactive web application** (`simulator_interface.py`), which exposes the most
+  commonly varied parameters through form controls and displays the resulting figures in
+  a browser; and
+- a **notebook** (`main.ipynb`) and the underlying **Python API**, which expose the
+  complete configuration and are suited to scripted experiments and ablation studies.
+
+### Interactive application
 
 ```bash
 streamlit run simulator_interface.py
 ```
 
-Pick a scenario in the sidebar — the **captive scenario** (the full large-scale network simulator) or the **non-captive toy model** (a simplified single-track JCAS-vs-sensing-only tracking experiment) — configure its parameters, and click **Run simulation**. Results are organized into tabs: network/Voronoi view, SINR & filtering distributions, communication/sensing association scatter plots, an animated GIF of entity trajectories, and a summary.
+Select a scenario in the sidebar — the **captive scenario** (the full large-scale
+network simulator) or the **non-captive toy model** (a simplified single-track
+experiment comparing JCAS tracking against a sensing-only baseline) — configure its
+parameters, and click **Run simulation**. The results are presented as a set of tabs:
+the network and Voronoi view, SINR and filtering distributions, communication/sensing
+association scatter plots, an animated trajectory sequence, and a summary. The summary
+tab includes a note titled *Interpretation of simulation outputs*, which gives the
+precise definition of the association ratio, its relationship to the Pearson
+correlation, and guidance on reading the scatter plots and kernel density estimates.
 
-Every run's Summary tab has an **Export** section:
-- **Download all images (ZIP)** — every plot generated for that run (plus the trajectory animation, if you generated one), as PNGs.
-- **Download parameters (LaTeX)** — the exact parameters used for that run, as a small standalone `.tex` file (a `booktabs` table) that compiles as-is with `pdflatex`.
+Each run's summary tab provides an **export** section:
 
-The ray-traced (`rt`) channel model is significantly slower than the Rayleigh-fading (`exponential`) one — the app warns you before running it.
+- **Download all images (ZIP)** — every figure produced for the run, and the trajectory
+  animation if it was generated, as PNG files.
+- **Download parameters (LaTeX)** — the parameters of the run as a standalone `.tex`
+  file containing a `booktabs` table, which compiles directly with `pdflatex`.
 
-## The notebook
+The ray-traced channel (`rt`) is considerably slower than the Rayleigh-fading channel
+(`exponential`); the application displays a warning before such a run.
+
+### Notebook and Python API
 
 ```bash
 jupyter notebook main.ipynb
 ```
 
-`main.ipynb` exercises the full `SimulationConfig` API directly: region/network/mobility/channel/filtering/beamforming/TDD configuration, the RT-vs-exponential channel-law ablation, and the non-captive tracking model, with every plotting function from `jcas_simulator.visualization` available for finer control than the app's UI exposes (custom `save_path`s, log-axis scatter plots, trajectory subsetting, etc.).
+`main.ipynb` demonstrates the full `SimulationConfig` API, including the
+region, network, mobility, channel, filtering, beamforming, and TDD settings; the
+RT-versus-exponential channel-law comparison; and the non-captive tracking model. Every
+plotting function in `jcas_simulator.visualization` accepts the result object, together
+with options (such as a save path, logarithmic axes, or trajectory subsetting) that are
+not exposed by the application.
 
-## Project layout
+A minimal run is as follows.
 
+```python
+from jcas_simulator import (
+    JCASSimulator, SimulationConfig, NetworkConfig, RegionConfig,
+    PointProcessConfig, PopulationConfig, ChannelConfig,
+    FilterConfig, ObservationConfig,
+)
+
+config = SimulationConfig(
+    master_seed=42,
+    horizon=200,
+    network=NetworkConfig(
+        region=RegionConfig(width=3000.0, height=3000.0),
+        base_stations=PointProcessConfig(fixed_count=30),
+        ue_population=PopulationConfig(count_model="fixed", fixed_per_cell=1),
+        so_population=PopulationConfig(count_model="fixed", fixed_per_cell=1),
+    ),
+    channel=ChannelConfig(model="exponential"),
+    filtering=FilterConfig(observation=ObservationConfig(kind="linear")),
+)
+
+result = JCASSimulator(config).run()
+print(result.summary())
 ```
-simulator_interface.py  Streamlit app
-main.ipynb             Full config-API notebook
-setup.sh                Creates .venv and installs dependencies
-requirements.txt       Python dependencies
-jcas_simulator/         The simulator package
-  config.py              All configuration dataclasses (SimulationConfig, ...)
-  simulator.py            Orchestration (JCASSimulator, LargeScaleJCASSimulator)
-  network.py, geometry.py Network generation, toroidal Voronoi tessellation
-  channel.py              Physical channel models (Rayleigh-fading, ray-traced)
-  mobility.py, filtering.py   Motion models, Kalman/EKF filtering
-  beamforming.py, scheduling.py  Optional sector beamforming, TDD scheduling
-  non_captive/             The simplified non-captive tracking model
-  visualization/           Plotting functions (KDEs, scatter plots, trajectories, animation)
-tests/                  pytest suite
-```
+
+Because `SimulationConfig` is an immutable (frozen) dataclass tree, `dataclasses.replace`
+supports concise ablation studies in which a single field is varied while all others are
+held fixed — for example,
+`replace(config, channel=replace(config.channel, model="rt"))` for the
+RT-versus-Rayleigh channel-law comparison, or
+`filtering=FilterConfig(kind="ekf", observation=ObservationConfig(kind="range_bearing"))`
+for nonlinear, radar-style tracking.
+
+## Simulation modes
+
+`SimulationConfig.operation_mode` selects between two distinct simulation strategies. The
+identifiers used in the code differ from the labels shown in the application.
+
+| `operation_mode`  | Application label         | Description |
+| ----------------- | ------------------------- | ----------- |
+| `non_cooperative` | **Captive scenario**      | The full large-scale network simulator described above. Returns a `LargeScaleSimulationResult`. |
+| `non_captive`     | **Non-captive toy model** | A supplied, simplified single-track experiment that compares JCAS tracking against a sensing-only baseline along a fixed line of base stations. It contains no ray-traced channel, sector beamforming, or TDD frame. Returns a `NonCaptiveSimulationResult`. |
 
 ## Configuration
 
-Every simulation is described by one `SimulationConfig` — a frozen dataclass tree (region, network, mobility, channel, filtering, beamforming, TDD, and non-captive-model settings). See `jcas_simulator/config.py` for every field and `main.ipynb` for worked examples; the app's sidebar exposes the most commonly changed subset of it.
+A simulation is specified by a single `SimulationConfig`, an immutable dataclass tree
+covering the region, network, mobility, channel, communication, filtering, beamforming,
+TDD, and non-captive-model settings. The configuration is validated on construction;
+in particular, `RegionConfig.distance_model` must be `"toroidal"`. The file
+`jcas_simulator/config.py` documents every field and its default value, and `main.ipynb`
+provides worked examples. The application's sidebar exposes the subset of parameters that
+is varied most frequently.
 
-## Testing
+## Simulation output
 
-```bash
-source .venv/bin/activate
-pytest
+`JCASSimulator(config).run()` returns a `LargeScaleSimulationResult` in the captive mode
+and a `NonCaptiveSimulationResult` in the non-captive mode.
+
+For the captive result:
+
+- `result.summary()` returns the entity counts, whether beamforming and TDD were active,
+  and the association metrics.
+- `result.association` contains the keys `interference`, `sinr`, and `filter_queue`,
+  each mapping to an `association_ratio` and a `pearson` value.
+- `result.queue_workloads`, `result.communication_sinr`, `result.sensing_sinr`,
+  `result.covariance_traces`, `result.ue_trajectories`, and `result.so_trajectories`
+  provide per-entity time series.
+- `result.bs_metrics` contains the per-base-station means from which the association
+  metrics are computed.
+
+For the non-captive result:
+
+- `result.true_state`, `result.jcas_estimate`, and `result.sensing_only_estimate` hold
+  the ground-truth track and the two filter estimates.
+- `result.position_error_jcas` and `result.position_error_sensing_only` (with their
+  `smoothed_` counterparts) and `result.percent_error` quantify the JCAS-versus-baseline
+  tracking improvement over time.
+- `result.jcas_snr`, `result.sensing_only_snr`, and `result.jcas_covariance` provide the
+  per-step link and estimation quality.
+
+## Repository structure
+
+```
+simulator_interface.py       Streamlit application
+main.ipynb                   Configuration-API notebook (examples, channel-law comparison)
+setup.sh                     Creates the virtual environment and installs dependencies
+requirements.txt             Python dependencies
+jcas_simulator/              Simulator package
+  config.py                    Configuration dataclasses (SimulationConfig, ...)
+  simulator.py                 Orchestration (JCASSimulator, LargeScaleJCASSimulator)
+  network.py                   Stochastic network generation (point process -> Voronoi -> UEs/SOs)
+  geometry.py                  Toroidal distance and displacement, periodic Voronoi tessellation
+  mobility.py                  Motion models and initial states
+  channel.py                   Physical channel models (rt, exponential) and the channel registry
+  communication.py             Lindley queue
+  sensing.py                   Observation models and SINR-dependent measurement noise
+  filtering.py                 Kalman and Extended Kalman filters
+  beamforming.py               Directional sector beamformer
+  scheduling.py                Cyclic TDD scheduler
+  metrics.py                   Association ratio and Pearson correlation
+  rng.py                       Per-stream seeded random-number manager
+  non_captive/                 Supplied non-captive tracking model
+  visualization/               Plotting (Voronoi, KDEs, association scatter plots, trajectory animation)
 ```
 
-## Deploying the app
+## Deployment
 
-The app has no external services or secrets, so it deploys as-is to [Streamlit Community Cloud](https://streamlit.io/cloud) for free: push this repo to GitHub, connect it on Streamlit Community Cloud, and point it at `simulator_interface.py`. Any other host that can run `pip install -r requirements.txt && streamlit run simulator_interface.py` works too.
+The application uses no external services or secrets and can therefore be deployed
+without modification to [Streamlit Community Cloud](https://streamlit.io/cloud): push the
+repository to GitHub, connect it on Streamlit Community Cloud, and set the entry point to
+`simulator_interface.py`. Any host able to run
+`pip install -r requirements.txt && streamlit run simulator_interface.py` is equally
+suitable.
+
+## Citation
+
+If this simulator is used in academic work, please cite the repository:
+
+```bibtex
+@misc{mengoli2026jcas,
+  author       = {Mengoli, Emanuele},
+  title        = {{JCAS Simulator}: a toroidal joint communication and sensing network simulator},
+  year         = {2026},
+  howpublished = {\url{https://github.com/emanuelemengoli/instinct-jcas-simulator}},
+  note         = {Software}
+}
+```
 
 ## License
 
-No license file is included yet. Add one (e.g. MIT, Apache-2.0) before treating this as open for reuse — until then, all rights are reserved by default.
+This project is released under the MIT License. The full text is given in the
+[LICENSE](LICENSE) file.
