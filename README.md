@@ -22,6 +22,7 @@ sensing subsystems of a shared network interact.
 - [Deployment](#deployment)
 - [Citation](#citation)
 - [License](#license)
+- [References](#references)
 
 ## Overview
 
@@ -37,9 +38,11 @@ The simulator comprises the following components.
   spatially aggregated statistics. 
 - **Mobility.** UEs and SOs follow a stationary, Gauss–Markov, or constant-speed motion
   model, with state represented as position or as position and velocity.
-- **Channel.** Two physical channel models are provided: a ray-traced model (`rt`),
-  parameterised from a measurement-campaign fit and a Rayleigh-fading power-law model
-  (`exponential`), given by `H · max(d_min, d)^(-alpha)` with `H ~ Exp(mean)`.
+- **Channel.** Two physical channel models are provided. The ray-traced model (`rt`) is
+  parameterised from a measurement-campaign fit produced with the University of Oulu ray
+  tracer [[1]](#references) for the INSTINCT 6G project [[2]](#references). The
+  Rayleigh-fading power-law model (`exponential`) is given by
+  `H · max(d_min, d)^(-alpha)` with `H ~ Exp(mean)`.
   Transmit power, noise, bandwidth and carrier frequency are shared across models, as is
   the choice between one-way and two-way (monostatic-radar) sensing gain. Additional
   channel models may be registered at run time through `register_channel_model`.
@@ -272,3 +275,24 @@ If this simulator is used in academic work, please cite the repository:
 
 This project is released under the MIT License. The full text is given in the
 [LICENSE](LICENSE) file.
+
+## References
+
+1. J. Pyhtilä, J. Kokkoniemi, P. Sangi, N. Vaara and M. Juntti, "Ray Tracing Based Radio
+   Channel Modelling Applied to RIS," in *WSA & SCC 2023; 26th International ITG Workshop
+   on Smart Antennas and 13th Conference on Systems, Communications, and Coding*, 2023,
+   pp. 1–6.
+
+   ```bibtex
+   @inproceedings{Pyhtila2023,
+     author    = {Pyhtil{\"a}, Juha and Kokkoniemi, Joonas and Sangi, Pekka and Vaara, Niklas and Juntti, Markku},
+     title     = {Ray Tracing Based Radio Channel Modelling Applied to {RIS}},
+     booktitle = {WSA \& SCC 2023; 26th International ITG Workshop on Smart Antennas and 13th Conference on Systems, Communications, and Coding},
+     year      = {2023},
+     pages     = {1--6}
+   }
+   ```
+
+2. INSTINCT — Joint Sensing and Communication for Future Connectivity, Barkhausen
+   Institut.
+   <https://www.barkhauseninstitut.org/en/instinct-joint-sensing-and-communication-for-future-connectivity>
