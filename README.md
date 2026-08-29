@@ -1,10 +1,10 @@
 # JCAS Simulator
 
 This repository provides a configurable simulator for **joint communication and sensing
-(JCAS)** networks defined on a periodic (toroidal) spatial domain. Base stations, mobile
-user equipment (UE), and sensing objects (SO) are placed on a rectangular flat torus; a
-Voronoi tessellation defines cell coverage; every link is propagated through a physical
-channel model; and each sensing object is tracked with a Kalman or Extended Kalman
+(JCAS)** networks defined on a periodic (toroidal) spatial domain. Base stations (BSs), mobile
+user equipments (UEs) and sensing objects (SOs) are placed on a rectangular flat torus, where a
+Voronoi tessellation defines cell coverage. Every link is propagated through a physical
+channel model and each SO is tracked with a Kalman or Extended Kalman
 filter. The simulator is intended for the controlled study of how the communication and
 sensing subsystems of a shared network interact.
 
@@ -27,37 +27,37 @@ sensing subsystems of a shared network interact.
 
 The simulator comprises the following components.
 
-- **Network generation.** Base stations are drawn from a homogeneous Poisson point
-  process, or fixed to a chosen count for controlled experiments. Each cell is then
+- **Network generation.** BSs are drawn from a homogeneous Poisson or Binomial (fixed count) point
+  process. Each cell is then
   populated with UEs and SOs, placed either uniformly or as a Gaussian cluster around the
-  serving base station.
+  serving BS.
 - **Geometry.** All spatial computation uses the rectangular flat-torus (minimum-image)
-  metric. The Voronoi tessellation, mobility models, filtering, beamforming, and handover
-  logic are periodic, which removes the edge effects that would otherwise bias
-  spatially aggregated statistics. The Euclidean metric is not supported.
+  metric. The Voronoi tessellation, mobility models, filtering, beamforming and handover
+  logic are periodic, which removes boundary effects that would otherwise bias
+  spatially aggregated statistics. 
 - **Mobility.** UEs and SOs follow a stationary, Gauss–Markov, or constant-speed motion
   model, with state represented as position or as position and velocity.
 - **Channel.** Two physical channel models are provided: a ray-traced model (`rt`),
-  parameterised from a measurement-campaign fit, and a Rayleigh-fading power-law model
+  parameterised from a measurement-campaign fit and a Rayleigh-fading power-law model
   (`exponential`), given by `H · max(d_min, d)^(-alpha)` with `H ~ Exp(mean)`.
-  Transmit power, noise, bandwidth, and carrier frequency are shared across models, as is
+  Transmit power, noise, bandwidth and carrier frequency are shared across models, as is
   the choice between one-way and two-way (monostatic-radar) sensing gain. Additional
   channel models may be registered at run time through `register_channel_model`.
 - **Communication.** Each UE is served by a Lindley queue whose service rate depends on
   the instantaneous SINR, yielding a per-cell workload time series.
-- **Sensing and filtering.** Observations are linear or radar-style (range, bearing, and
+- **Sensing and filtering.** Observations are linear or radar-style (range, bearing and
   optionally range rate), with measurement noise that scales with SINR. These are
   processed by a Kalman filter (linear observations) or an Extended Kalman filter
   (nonlinear observations); the trace of the estimation-error covariance is used as the
   sensing-uncertainty metric.
 - **Optional mechanisms.** Directional sector beamforming and a cyclic time-division
   duplex (TDD) communication/sensing schedule may be enabled.
-- **Coupling metrics.** For each base station, the communication and sensing quantities
+- **Coupling metrics.** For each BS, the communication and sensing quantities
   are averaged and then summarised by an *association ratio*,
   `A(X, Y) = E[XY] / (E[X] · E[Y])`, together with the Pearson correlation, for the
-  interference, SINR, and queue-versus-covariance pairs. Values of the association ratio
+  interference, SINR and queue-versus-covariance pairs. Values of the association ratio
   above one indicate positive co-fluctuation across the network, values below one
-  indicate a trade-off, and independence yields one.
+  indicate a trade-off and independence yields one.
 
 Each simulation is fully determined by its `master_seed`, which drives a per-stream
 seeded random-number manager, so results are exactly reproducible.
@@ -75,7 +75,7 @@ source .venv/bin/activate
 
 `setup.sh` creates a virtual environment (`.venv`) in the repository root and installs
 the dependencies listed in `requirements.txt` (NumPy, SciPy, Shapely, Matplotlib,
-seaborn, Jupyter, pytest, and Streamlit). It may be re-run safely, as it reuses an
+seaborn, Jupyter, pytest and Streamlit). It may be re-run safely, as it reuses an
 existing environment rather than recreating it. The interpreter used to create the
 environment can be overridden, for example `PYTHON_BIN=python3.12 ./setup.sh`.
 
@@ -109,16 +109,16 @@ streamlit run simulator_interface.py
 Select a scenario in the sidebar — the **captive scenario** (the full large-scale
 network simulator) or the **non-captive toy model** (a simplified single-track
 experiment comparing JCAS tracking against a sensing-only baseline) — configure its
-parameters, and click **Run simulation**. The results are presented as a set of tabs:
+parameters and click **Run simulation**. The results are presented as a set of tabs:
 the network and Voronoi view, SINR and filtering distributions, communication/sensing
-association scatter plots, an animated trajectory sequence, and a summary. The summary
+association scatter plots, an animated trajectory sequence and a summary. The summary
 tab includes a note titled *Interpretation of simulation outputs*, which gives the
 precise definition of the association ratio, its relationship to the Pearson
-correlation, and guidance on reading the scatter plots and kernel density estimates.
+correlation and guidance on reading the scatter plots and kernel density estimates.
 
 Each run's summary tab provides an **export** section:
 
-- **Download all images (ZIP)** — every figure produced for the run, and the trajectory
+- **Download all images (ZIP)** — every figure produced for the run and the trajectory
   animation if it was generated, as PNG files.
 - **Download parameters (LaTeX)** — the parameters of the run as a standalone `.tex`
   file containing a `booktabs` table, which compiles directly with `pdflatex`.
@@ -133,7 +133,7 @@ jupyter notebook main.ipynb
 ```
 
 `main.ipynb` demonstrates the full `SimulationConfig` API, including the
-region, network, mobility, channel, filtering, beamforming, and TDD settings; the
+region, network, mobility, channel, filtering, beamforming and TDD settings; the
 RT-versus-exponential channel-law comparison; and the non-captive tracking model. Every
 plotting function in `jcas_simulator.visualization` accepts the result object, together
 with options (such as a save path, logarithmic axes, or trajectory subsetting) that are
@@ -181,15 +181,15 @@ identifiers used in the code differ from the labels shown in the application.
 | `operation_mode`  | Application label         | Description |
 | ----------------- | ------------------------- | ----------- |
 | `non_cooperative` | **Captive scenario**      | The full large-scale network simulator described above. Returns a `LargeScaleSimulationResult`. |
-| `non_captive`     | **Non-captive toy model** | A supplied, simplified single-track experiment that compares JCAS tracking against a sensing-only baseline along a fixed line of base stations. It contains no ray-traced channel, sector beamforming, or TDD frame. Returns a `NonCaptiveSimulationResult`. |
+| `non_captive`     | **Non-captive toy model** | A supplied, simplified single-track experiment that compares JCAS tracking against a sensing-only baseline along a fixed line of BSs. It contains no ray-traced channel, sector beamforming, or TDD frame. Returns a `NonCaptiveSimulationResult`. |
 
 ## Configuration
 
 A simulation is specified by a single `SimulationConfig`, an immutable dataclass tree
 covering the region, network, mobility, channel, communication, filtering, beamforming,
-TDD, and non-captive-model settings. The configuration is validated on construction;
+TDD and non-captive-model settings. The configuration is validated on construction;
 in particular, `RegionConfig.distance_model` must be `"toroidal"`. The file
-`jcas_simulator/config.py` documents every field and its default value, and `main.ipynb`
+`jcas_simulator/config.py` documents every field and its default value and `main.ipynb`
 provides worked examples. The application's sidebar exposes the subset of parameters that
 is varied most frequently.
 
@@ -202,22 +202,22 @@ For the captive result:
 
 - `result.summary()` returns the entity counts, whether beamforming and TDD were active,
   and the association metrics.
-- `result.association` contains the keys `interference`, `sinr`, and `filter_queue`,
+- `result.association` contains the keys `interference`, `sinr` and `filter_queue`,
   each mapping to an `association_ratio` and a `pearson` value.
 - `result.queue_workloads`, `result.communication_sinr`, `result.sensing_sinr`,
-  `result.covariance_traces`, `result.ue_trajectories`, and `result.so_trajectories`
+  `result.covariance_traces`, `result.ue_trajectories` and `result.so_trajectories`
   provide per-entity time series.
 - `result.bs_metrics` contains the per-base-station means from which the association
   metrics are computed.
 
 For the non-captive result:
 
-- `result.true_state`, `result.jcas_estimate`, and `result.sensing_only_estimate` hold
+- `result.true_state`, `result.jcas_estimate` and `result.sensing_only_estimate` hold
   the ground-truth track and the two filter estimates.
 - `result.position_error_jcas` and `result.position_error_sensing_only` (with their
   `smoothed_` counterparts) and `result.percent_error` quantify the JCAS-versus-baseline
   tracking improvement over time.
-- `result.jcas_snr`, `result.sensing_only_snr`, and `result.jcas_covariance` provide the
+- `result.jcas_snr`, `result.sensing_only_snr` and `result.jcas_covariance` provide the
   per-step link and estimation quality.
 
 ## Repository structure
@@ -249,7 +249,7 @@ jcas_simulator/              Simulator package
 
 The application uses no external services or secrets and can therefore be deployed
 without modification to [Streamlit Community Cloud](https://streamlit.io/cloud): push the
-repository to GitHub, connect it on Streamlit Community Cloud, and set the entry point to
+repository to GitHub, connect it on Streamlit Community Cloud and set the entry point to
 `simulator_interface.py`. Any host able to run
 `pip install -r requirements.txt && streamlit run simulator_interface.py` is equally
 suitable.
