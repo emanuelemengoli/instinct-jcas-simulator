@@ -16,3 +16,6 @@ __pycache__/
 
 # OS
 .DS_Store
+
+# Source assets (extracted into docs/images/)
+jcas_simulation_images.zip

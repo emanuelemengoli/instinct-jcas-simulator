@@ -516,7 +516,7 @@ class LargeScaleJCASSimulator:
         )
         association = self._association_metrics(bs_metrics)
         return LargeScaleSimulationResult(
-            mode="non_cooperative",
+            mode="captive",
             network=self.network,
             queue_workloads=queue_workloads,
             communication_sinr=comm_sinr,
@@ -677,7 +677,7 @@ class JCASSimulator:
         self.channel = channel
 
     def run(self) -> LargeScaleSimulationResult | NonCaptiveSimulationResult:
-        if self.config.operation_mode == "non_cooperative":
+        if self.config.operation_mode == "captive":
             return LargeScaleJCASSimulator(
                 self.config,
                 ue_dynamics_factory=self.ue_dynamics_factory,

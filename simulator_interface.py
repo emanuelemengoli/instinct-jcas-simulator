@@ -231,7 +231,7 @@ def _latex_escape(value: object) -> str:
 
 def params_to_latex(mode: str, params: dict[str, object]) -> str:
     """Render a run's parameters as a small standalone, compilable LaTeX document."""
-    scenario = "Captive scenario" if mode == "non_cooperative" else "Non-captive toy model"
+    scenario = "Captive scenario" if mode == "captive" else "Non-captive toy model"
     rows = "\n".join(
         f"{_latex_escape(label)} & {_latex_escape(value)} \\\\" for label, value in params.items()
     )
@@ -420,9 +420,9 @@ with st.sidebar:
     st.header("Scenario")
     operation_mode = st.radio(
         "Simulation strategy",
-        ["non_cooperative", "non_captive"],
+        ["captive", "non_captive"],
         format_func=lambda m: "Captive scenario"
-        if m == "non_cooperative"
+        if m == "captive"
         else "Non-captive toy model",
     )
     seed = st.number_input(
@@ -433,10 +433,10 @@ with st.sidebar:
         help="Controls the randomness of this run. The same seed always reproduces the exact same result.",
     )
 
-    if operation_mode == "non_cooperative":
+    if operation_mode == "captive":
         st.subheader("Network")
-        width = st.slider("Region width (m)", 50.0, 5000.0, 1500.0, step=100.0)
-        height = st.slider("Region height (m)", 50.0, 5000.0, 1500.0, step=100.0)
+        width = st.slider("Region width (m)", 50.0, 5000.0, 1500.0, step=50.0)
+        height = st.slider("Region height (m)", 50.0, 5000.0, 1500.0, step=50.0)
         bs_count_model = st.radio(
             "Base station count",
             ["fixed", "poisson"],
@@ -489,7 +489,7 @@ with st.sidebar:
                 "Background noise level (dBm/Hz)",
                 -200.0,
                 -80.0,
-                -125.0,
+                -174.0,
                 step=1.0,
                 help="How much random background (thermal) noise competes with the signal. "
                 "Lower (more negative) means a quieter, cleaner environment.",
@@ -543,7 +543,7 @@ with st.sidebar:
                 radar_cross_section = st.slider(
                     "Radar cross-section (m²)",
                     0.1,
-                    20.0,
+                    50.0,
                     1.0,
                     step=0.1,
                     help="How large/reflective the sensed object appears to radar — bigger, more "
@@ -584,15 +584,15 @@ with st.sidebar:
             if population_count_model == "fixed"
             else "Average sensing objects per cell"
         )
-        ue_per_cell = st.slider(ue_label, 1, 20, 1)
-        so_per_cell = st.slider(so_label, 1, 20, 1)
+        ue_per_cell = st.slider(ue_label, 1, 100, 1)
+        so_per_cell = st.slider(so_label, 1, 100, 1)
 
         st.subheader("Communication")
         with st.expander("Communication: Advanced parameters"):
             arrival_rate = st.slider(
                 "Data traffic intensity",
                 0.0,
-                5.0,
+                20.0,
                 1.0,
                 step=0.1,
                 help="How often new communication requests arrive at each base station's queue. Higher means a busier network.",
@@ -601,12 +601,12 @@ with st.sidebar:
         st.subheader("Mobility")
         motion_kind = st.selectbox(
             "Movement pattern",
-            ["static", "gauss_markov", "constant_speed"],
+            ["static", "gauss_markov", "rho_random_walk"],
             index=1,
             format_func=lambda m: {
                 "static": "Stationary (no movement)",
-                "gauss_markov": "Smooth random movement (Gauss-Markov)",
-                "constant_speed": "Constant speed, random direction changes",
+                "gauss_markov": "Gauss-Markov process",
+                "rho_random_walk": "ρ-persistent random walk",
             }[m],
         )
         rho = st.slider(
@@ -621,21 +621,21 @@ with st.sidebar:
         process_noise_std = st.slider(
             "Movement randomness",
             0.0,
-            2.0,
+            5.0,
             0.2,
             step=0.05,
             help="The amount of random \u2018jitter\u2019 added to movement at each step.",
         )
 
         with st.expander("Mobility: Advanced parameters"):
-            state_dim_forced = motion_kind == "constant_speed"
+            state_dim_forced = motion_kind == "rho_random_walk"
             state_dim = st.selectbox(
                 "What's tracked",
                 [2, 4],
                 index=1 if state_dim_forced else 0,
                 format_func=lambda d: "Position only (x, y)" if d == 2 else "Position + velocity (x, y, speed)",
                 disabled=state_dim_forced,
-                help="\"Constant speed, random direction changes\" requires tracking velocity too."
+                help="\"ρ-persistent random walk\" requires tracking velocity too."
                 if state_dim_forced
                 else None,
             )
@@ -645,6 +645,13 @@ with st.sidebar:
                 initial_speed_min_mps, initial_speed_max_mps = st.slider(
                     "Initial speed range (m/s)", 0.0, 20.0, (0.0, 0.0), step=0.5
                 )
+                if motion_kind == "gauss_markov":
+                    st.info(
+                        "With the Gauss-Markov model the initial speed is only drawn "
+                        "into the tracked state, so it affects parameter estimation "
+                        "and not the real motion. Speed selection affects motion only "
+                        "in the ρ-persistent random walk."
+                    )
             else:
                 initial_speed_min_mps, initial_speed_max_mps = 0.0, 0.0
 
@@ -709,7 +716,7 @@ with st.sidebar:
                     range_rate_std = st.slider(
                         "Speed measurement noise",
                         0.0,
-                        2.0,
+                        5.0,
                         0.1,
                         step=0.05,
                         help="Uncertainty (noise) in each closing-speed measurement.",
@@ -804,7 +811,7 @@ with st.sidebar:
 
 if run_clicked:
     try:
-        if operation_mode == "non_cooperative":
+        if operation_mode == "captive":
             effective_channel = (
                 "exponential" if beamforming_enabled and channel_model == "rt" else channel_model
             )
@@ -936,7 +943,7 @@ result_mode = st.session_state.get("result_mode")
 
 if result is None:
     st.info("Configure a scenario in the sidebar, then click **Run simulation**.")
-elif result_mode == "non_cooperative":
+elif result_mode == "captive":
     collected_images: list[tuple[str, bytes]] = []
     tabs = st.tabs(["Network", "SINR & filtering", "Association", "Trajectory animation", "Summary"])
 

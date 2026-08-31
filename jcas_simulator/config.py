@@ -88,7 +88,7 @@ class MotionConfig:
     covariance used by both state simulation and filtering is ``std**2 * I``.
     """
 
-    kind: Literal["static", "gauss_markov", "constant_speed"] = "gauss_markov"
+    kind: Literal["static", "gauss_markov", "rho_random_walk"] = "gauss_markov"
     state_dim: Literal[2, 4] = 2
     rho: float = 0.9
     process_noise_std: float = 1.0
@@ -184,7 +184,7 @@ class ChannelConfig:
     rt_max_rejection_rounds: int = 10_000
 
     transmit_power_dbm: float = 46.0
-    noise_psd_dbm_per_hz: float = -125.0
+    noise_psd_dbm_per_hz: float = -174.0
     bandwidth_hz: float = 20.0e6
     sensing_two_way: bool = True
     # ``auto`` preserves the exact square-law sensing gain for the exponential
@@ -251,7 +251,7 @@ class SimulationConfig:
     """Top-level simulator configuration."""
 
     master_seed: int = 142
-    operation_mode: Literal["non_cooperative", "non_captive"] = "non_cooperative"
+    operation_mode: Literal["captive", "non_captive"] = "captive"
     horizon: int = 100
     time_step_s: float = 1.0
     network: NetworkConfig = field(default_factory=NetworkConfig)

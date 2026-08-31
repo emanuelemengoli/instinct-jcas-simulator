@@ -8,6 +8,11 @@ channel model and each SO is tracked with a Kalman or Extended Kalman
 filter. The simulator is intended for the controlled study of how the communication and
 sensing subsystems of a shared network interact.
 
+![JCAS network realization and Voronoi tessellation](docs/images/network_voronoi.png)
+
+*A single network realization on the flat torus — base stations (BS), user equipments (UE) and
+sensing objects (SO) — with the induced Voronoi tessellation that defines cell coverage.*
+
 ## Contents
 
 - [Overview](#overview)
@@ -18,6 +23,7 @@ sensing subsystems of a shared network interact.
 - [Simulation modes](#simulation-modes)
 - [Configuration](#configuration)
 - [Simulation output](#simulation-output)
+- [Example output](#example-output)
 - [Repository structure](#repository-structure)
 - [Deployment](#deployment)
 - [Citation](#citation)
@@ -36,8 +42,11 @@ The simulator comprises the following components.
   metric. The Voronoi tessellation, mobility models, filtering, beamforming and handover
   logic are periodic, which removes boundary effects that would otherwise bias
   spatially aggregated statistics. 
-- **Mobility.** UEs and SOs follow a stationary, Gauss–Markov, or constant-speed motion
-  model, with state represented as position or as position and velocity.
+- **Mobility.** UEs and SOs follow a stationary, Gauss–Markov, or ρ-persistent
+  random-walk motion model, with state represented as position or as position and
+  velocity. The initial speed is used by the simulated motion only in the ρ-persistent
+  random walk; under Gauss–Markov it enters the tracked state and therefore affects
+  parameter estimation alone.
 - **Channel.** Two physical channel models are provided. The ray-traced model (`rt`) is
   parameterised from a measurement-campaign fit produced with the University of Oulu ray
   tracer [[1]](#references) for the INSTINCT 6G project [[2]](#references). The
@@ -183,7 +192,7 @@ identifiers used in the code differ from the labels shown in the application.
 
 | `operation_mode`  | Application label         | Description |
 | ----------------- | ------------------------- | ----------- |
-| `non_cooperative` | **Captive scenario**      | The full large-scale network simulator described above. Returns a `LargeScaleSimulationResult`. |
+| `captive`         | **Captive scenario**      | The full large-scale network simulator described above. Returns a `LargeScaleSimulationResult`. |
 | `non_captive`     | **Non-captive toy model** | A supplied, simplified single-track experiment that compares JCAS tracking against a sensing-only baseline along a fixed line of BSs. It contains no ray-traced channel, sector beamforming, or TDD frame. Returns a `NonCaptiveSimulationResult`. |
 
 ## Configuration
@@ -222,6 +231,32 @@ For the non-captive result:
   tracking improvement over time.
 - `result.jcas_snr`, `result.sensing_only_snr` and `result.jcas_covariance` provide the
   per-step link and estimation quality.
+
+## Example output
+
+The figures below come from a single captive-scenario run under the default configuration
+(`exponential` channel), generated with the plotting helpers in `jcas_simulator.visualization`.
+Every figure for a run is also available from the application's export panel.
+
+### Steady-state distributions
+
+| Communication / sensing SINR | Filter covariance trace | Queue workload |
+| :---: | :---: | :---: |
+| ![Communication and sensing SINR KDE](docs/images/sinr_kde.png) | ![Filter covariance-trace KDE](docs/images/covariance_trace_kde.png) | ![Queue-workload KDE](docs/images/workload_kde.png) |
+
+Kernel density estimates pooled across entities in the steady-state window: the per-link
+communication and sensing SINR (the monostatic sensing return is far weaker than the
+communication link), the Kalman/Extended-Kalman error-covariance trace `Tr(Σ)` used as the
+sensing-uncertainty metric, and the per-cell Lindley-queue workload. Where a steady state is not
+detected, the full run is shown instead.
+
+### Queue–covariance association
+
+![Queue workload versus filter covariance trace, with association ratio](docs/images/filter_queue_association.png)
+
+Per-base-station mean queue workload against mean filter covariance trace. Here the association
+ratio `A(W, Tr(Σ)) = E[W·Tr(Σ)] / (E[W]·E[Tr(Σ)]) ≈ 1.006 > 1`, indicating that communication
+congestion and sensing uncertainty co-increase weakly across the network.
 
 ## Repository structure
 

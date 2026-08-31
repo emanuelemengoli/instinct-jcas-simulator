@@ -145,10 +145,10 @@ class GaussMarkovDynamics(LinearGaussianDynamics):
         return super().transition(x)
 
 
-class ConstantSpeedDynamics(LinearGaussianDynamics):
+class RhoRandomWalkDynamics(LinearGaussianDynamics):
     def __init__(self, config: MotionConfig, dt: float, region: RegionConfig | None = None):
         if config.state_dim != 4:
-            raise ValueError("constant_speed requires state_dim=4")
+            raise ValueError("rho_random_walk requires state_dim=4")
         a = np.array(
             [
                 [1.0, 0.0, dt, 0.0],
@@ -172,8 +172,8 @@ def make_dynamics(
         return StaticDynamics(config.state_dim, region=region)
     if config.kind == "gauss_markov":
         return GaussMarkovDynamics(config, center=center, region=region)
-    if config.kind == "constant_speed":
-        return ConstantSpeedDynamics(config, dt=dt, region=region)
+    if config.kind == "rho_random_walk":
+        return RhoRandomWalkDynamics(config, dt=dt, region=region)
     raise ValueError(f"unsupported motion model: {config.kind}")
 
 
