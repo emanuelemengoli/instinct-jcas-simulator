@@ -4,14 +4,13 @@ This repository provides a configurable simulator for **joint communication and 
 (JCAS)** networks defined on a periodic (toroidal) spatial domain. Base stations (BSs), mobile
 user equipments (UEs) and sensing objects (SOs) are placed on a rectangular flat torus, where a
 Voronoi tessellation defines cell coverage. Every link is propagated through a physical
-channel model and each SO is tracked with a Kalman or Extended Kalman
-filter. The simulator is intended for the controlled study of how the communication and
+channel model and each SO is tracked with a Kalman (KF) or Extended Kalman
+filter (EKF). The simulator is intended for the controlled study of how the communication and
 sensing subsystems of a shared network interact.
 
 ![JCAS network realization and Voronoi tessellation](docs/images/network_voronoi.png)
 
-*A single network realization on the flat torus — base stations (BS), user equipments (UE) and
-sensing objects (SO) — with the induced Voronoi tessellation that defines cell coverage.*
+*A single network realization on the flat torus — BS, UE and SO — with the induced Voronoi tessellation that defines cell coverage.*
 
 ## Contents
 
@@ -59,7 +58,7 @@ The simulator comprises the following components.
   the instantaneous SINR, yielding a per-cell workload time series.
 - **Sensing and filtering.** Observations are linear or radar-style (range, bearing and
   optionally range rate), with measurement noise that scales with SINR. These are
-  processed by a Kalman filter (linear observations) or an Extended Kalman filter
+  processed by a KF (linear observations) or an E KF
   (nonlinear observations); the trace of the estimation-error covariance is used as the
   sensing-uncertainty metric.
 - **Optional mechanisms.** Directional sector beamforming and a cyclic time-division
@@ -246,7 +245,7 @@ Every figure for a run is also available from the application's export panel.
 
 Kernel density estimates pooled across entities in the steady-state window: the per-link
 communication and sensing SINR (the monostatic sensing return is far weaker than the
-communication link), the Kalman/Extended-Kalman error-covariance trace `Tr(Σ)` used as the
+communication link), the KF/EKF error-covariance trace `Tr(Σ)` used as the
 sensing-uncertainty metric and the per-cell Lindley-queue workload. Where a steady state is not
 detected, the full run is shown instead.
 
@@ -274,7 +273,7 @@ jcas_simulator/              Simulator package
   channel.py                   Physical channel models (rt, exponential) and the channel registry
   communication.py             Lindley queue
   sensing.py                   Observation models and SINR-dependent measurement noise
-  filtering.py                 Kalman and Extended Kalman filters
+  filtering.py                 KFs and EKFs
   beamforming.py               Directional sector beamformer
   scheduling.py                Cyclic TDD scheduler
   metrics.py                   Association ratio and Pearson correlation
