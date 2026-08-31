@@ -12,11 +12,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import numpy as np
 
-from ..config import NonCaptiveConfig
+from ..config import NonCaptiveToyModelConfig
 
 
 @dataclass
-class NonCaptiveSimulationResult:
+class NonCaptiveToyModelSimulationResult:
     mode: str
     true_state: np.ndarray
     jcas_estimate: np.ndarray
@@ -54,10 +54,10 @@ def moving_mean(x: np.ndarray, window: int) -> np.ndarray:
     return out
 
 
-def run_supplied_non_captive_model(
-    config: NonCaptiveConfig,
+def run_supplied_non_captive_toy_model(
+    config: NonCaptiveToyModelConfig,
     rng: np.random.Generator,
-) -> NonCaptiveSimulationResult:
+) -> NonCaptiveToyModelSimulationResult:
     """Run the supplied JCAS-vs-sensing-only tracking experiment.
 
     Source semantics preserved:
@@ -177,8 +177,8 @@ def run_supplied_non_captive_model(
             np.nan,
         )
 
-    return NonCaptiveSimulationResult(
-        mode="non_captive",
+    return NonCaptiveToyModelSimulationResult(
+        mode="non_captive_toy_model",
         true_state=x,
         jcas_estimate=x_post,
         sensing_only_estimate=x_post_bl,

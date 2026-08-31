@@ -1,6 +1,6 @@
 """Optional visualization API for structured JCAS simulation results."""
 
-from .non_captive_plots import plot_non_captive_estimation_comparison
+from .non_captive_toy_model_plots import plot_non_captive_toy_model_estimation_comparison
 
 from .association_plots import (
     plot_corr_scatter,
@@ -18,7 +18,7 @@ from .network_plots import plot_voronoi_network
 from .trajectory_plots import animate_entity_trajectories, plot_entity_trajectories
 
 __all__ = [
-    "plot_non_captive_estimation_comparison",
+    "plot_non_captive_toy_model_estimation_comparison",
     "plot_voronoi_network",
     "plot_sinr_kde",
     "plot_covariance_trace_kde",

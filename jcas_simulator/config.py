@@ -86,9 +86,14 @@ class MotionConfig:
 
     ``process_noise_std`` is a standard deviation. The corresponding process
     covariance used by both state simulation and filtering is ``std**2 * I``.
+
+    ``rho`` is the AR(1) persistence and must lie in ``[0, 1]``; for
+    ``kind="captive_gauss_markov"`` it must lie in ``[0, 1)``, since ``rho = 1``
+    removes the contraction toward the serving BS and the motion is no longer
+    captive.
     """
 
-    kind: Literal["static", "gauss_markov", "rho_random_walk"] = "gauss_markov"
+    kind: Literal["static", "captive_gauss_markov", "rho_random_walk"] = "captive_gauss_markov"
     state_dim: Literal[2, 4] = 2
     rho: float = 0.9
     process_noise_std: float = 1.0
@@ -232,7 +237,7 @@ class FilterConfig:
 
 
 @dataclass(frozen=True)
-class NonCaptiveConfig:
+class NonCaptiveToyModelConfig:
     """Parameters of the supplied non-captive JCAS tracking experiment."""
 
     horizon: int = 10_000
@@ -251,7 +256,7 @@ class SimulationConfig:
     """Top-level simulator configuration."""
 
     master_seed: int = 142
-    operation_mode: Literal["captive", "non_captive"] = "captive"
+    operation_mode: Literal["large_scale_simulator", "non_captive_toy_model"] = "large_scale_simulator"
     horizon: int = 100
     time_step_s: float = 1.0
     network: NetworkConfig = field(default_factory=NetworkConfig)
@@ -262,7 +267,7 @@ class SimulationConfig:
     tdd: TDDConfig = field(default_factory=TDDConfig)
     communication: CommunicationConfig = field(default_factory=CommunicationConfig)
     filtering: FilterConfig = field(default_factory=FilterConfig)
-    non_captive: NonCaptiveConfig = field(default_factory=NonCaptiveConfig)
+    non_captive_toy_model: NonCaptiveToyModelConfig = field(default_factory=NonCaptiveToyModelConfig)
     handover_enabled: bool = False
     # Hysteresis margin, in metres, for nearest-BS reassignment.  A serving-BS
     # switch only happens when a competitor is closer than the current serving
@@ -300,6 +305,12 @@ class SimulationConfig:
         for name, motion in (("ue_motion", self.ue_motion), ("so_motion", self.so_motion)):
             if not 0 <= motion.rho <= 1.0:
                 raise ValueError(f"{name}.rho must lie in [0, 1]")
+            if motion.kind == "captive_gauss_markov" and motion.rho >= 1.0:
+                raise ValueError(
+                    f"{name}.rho must lie in [0, 1) for captive_gauss_markov; rho = 1 "
+                    "removes the contraction toward the serving BS, so the motion is "
+                    "no longer captive"
+                )
             if motion.process_noise_std < 0:
                 raise ValueError(f"{name}.process_noise_std must be non-negative")
 
@@ -343,13 +354,13 @@ class SimulationConfig:
                 raise ValueError("TDD phase names must be non-empty")
             if not (phase.communication_active or phase.sensing_active):
                 raise ValueError("a TDD phase must activate communication and/or sensing")
-        if self.operation_mode == "non_captive" and (
+        if self.operation_mode == "non_captive_toy_model" and (
             self.beamforming.enabled or self.tdd.enabled
         ):
             raise ValueError(
                 "the supplied non-captive tracking model contains no RTChannel, "
                 "sector-beamforming, or active TDD equations; enabling large-scale "
-                "beamforming/TDD in non_captive mode would change that model"
+                "beamforming/TDD in non_captive_toy_model mode would change that model"
             )
         if self.beamforming.enabled and str(self.channel.model).strip().lower() == "rt":
             raise ValueError(

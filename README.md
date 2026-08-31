@@ -41,11 +41,11 @@ The simulator comprises the following components.
   metric. The Voronoi tessellation, mobility models, filtering, beamforming and handover
   logic are periodic, which removes boundary effects that would otherwise bias
   spatially aggregated statistics. 
-- **Mobility.** UEs and SOs follow a stationary, Gauss–Markov, or ρ-persistent
+- **Mobility.** UEs and SOs follow a stationary, captive Gauss–Markov, or ρ-persistent
   random-walk motion model, with state represented as position or as position and
   velocity. The initial speed is used by the simulated motion only in the ρ-persistent
-  random walk; under Gauss–Markov it enters the tracked state and therefore affects
-  parameter estimation alone.
+  random walk; under captive Gauss–Markov it enters the tracked state and therefore
+  affects parameter estimation alone.
 - **Channel.** Two physical channel models are provided. The ray-traced model (`rt`) is
   parameterised from a measurement-campaign fit produced with the University of Oulu ray
   tracer [[1]](#references) for the INSTINCT 6G project [[2]](#references). The
@@ -72,6 +72,13 @@ The simulator comprises the following components.
 
 Each simulation is fully determined by its `master_seed`, which drives a per-stream
 seeded random-number manager, so results are exactly reproducible.
+
+> [!NOTE]
+> The `rho_random_walk` motion model lets entities roam across cell boundaries and
+> re-associate to a new base station, so it is the model used for **handover**
+> scenarios (set `handover_enabled=True`). The `captive_gauss_markov` model contracts
+> each entity toward its serving base station and is used to model the **no-handover**
+> case.
 
 ## Installation
 
@@ -117,8 +124,8 @@ The simulator can be driven in two ways:
 streamlit run simulator_interface.py
 ```
 
-Select a scenario in the sidebar — the **captive scenario** (the full large-scale
-network simulator) or the **non-captive toy model** (a simplified single-track
+Select a scenario in the sidebar — the **large-scale simulator** (the full network
+simulator) or the **non-captive toy model** (a simplified single-track
 experiment comparing JCAS tracking against a sensing-only baseline) — configure its
 parameters and click **Run simulation**. The results are presented as a set of tabs:
 the network and Voronoi view, SINR and filtering distributions, communication/sensing
@@ -186,13 +193,13 @@ for nonlinear, radar-style tracking.
 
 ## Simulation modes
 
-`SimulationConfig.operation_mode` selects between two distinct simulation strategies. The
-identifiers used in the code differ from the labels shown in the application.
+`SimulationConfig.operation_mode` selects between two distinct simulation strategies,
+each shown in the application under the label below.
 
-| `operation_mode`  | Application label         | Description |
-| ----------------- | ------------------------- | ----------- |
-| `captive`         | **Captive scenario**      | The full large-scale network simulator described above. Returns a `LargeScaleSimulationResult`. |
-| `non_captive`     | **Non-captive toy model** | A supplied, simplified single-track experiment that compares JCAS tracking against a sensing-only baseline along a fixed line of BSs. It contains no ray-traced channel, sector beamforming, or TDD frame. Returns a `NonCaptiveSimulationResult`. |
+| `operation_mode`         | Application label         | Description |
+| ------------------------ | ------------------------- | ----------- |
+| `large_scale_simulator`  | **Large-scale simulator** | The full large-scale network simulator described above. Returns a `LargeScaleSimulationResult`. |
+| `non_captive_toy_model`  | **Non-captive toy model** | A supplied, simplified single-track experiment that compares JCAS tracking against a sensing-only baseline along a fixed line of BSs. It contains no ray-traced channel, sector beamforming, or TDD frame. Returns a `NonCaptiveToyModelSimulationResult`. |
 
 ## Configuration
 
@@ -206,10 +213,11 @@ is varied most frequently.
 
 ## Simulation output
 
-`JCASSimulator(config).run()` returns a `LargeScaleSimulationResult` in the captive mode
-and a `NonCaptiveSimulationResult` in the non-captive mode.
+`JCASSimulator(config).run()` returns a `LargeScaleSimulationResult` in the
+`large_scale_simulator` mode and a `NonCaptiveToyModelSimulationResult` in the
+`non_captive_toy_model` mode.
 
-For the captive result:
+For the large-scale-simulator result:
 
 - `result.summary()` returns the entity counts, whether beamforming and TDD were active,
   and the association metrics.
@@ -221,7 +229,7 @@ For the captive result:
 - `result.bs_metrics` contains the per-base-station means from which the association
   metrics are computed.
 
-For the non-captive result:
+For the non-captive-toy-model result:
 
 - `result.true_state`, `result.jcas_estimate` and `result.sensing_only_estimate` hold
   the ground-truth track and the two filter estimates.
@@ -233,8 +241,8 @@ For the non-captive result:
 
 ## Example output
 
-The figures below come from a single captive-scenario run under the default configuration
-(`exponential` channel), generated with the plotting helpers in `jcas_simulator.visualization`.
+The figures below come from a single large-scale-simulator run under the ray-traced channel
+configuration (`rt` channel), generated with the plotting helpers in `jcas_simulator.visualization`.
 Every figure for a run is also available from the application's export panel.
 
 ### Steady-state distributions
@@ -257,6 +265,17 @@ Per-base-station mean queue workload against mean filter covariance trace. Here 
 ratio `A(W, Tr(Σ)) = E[W·Tr(Σ)] / (E[W]·E[Tr(Σ)]) ≈ 1.006 > 1`, indicating that communication
 congestion and sensing uncertainty co-increase weakly across the network.
 
+### Trajectory animations
+
+| Captive Gauss–Markov | ρ-persistent random walk |
+| :---: | :---: |
+| ![Captive Gauss–Markov entity trajectories](_images/trajectory_animation_gm.gif) | ![ρ-persistent random-walk entity trajectories](_images/trajectory_animation_rw.gif) |
+
+Entity trajectories over a run. Under **captive Gauss–Markov** (`captive_gauss_markov`, left)
+each entity is contracted toward its serving base station and stays within its cell — the
+no-handover regime. Under the **ρ-persistent random walk** (`rho_random_walk`, right) entities
+carry momentum and roam across cell boundaries, the regime in which handover applies.
+
 ## Repository structure
 
 ```
@@ -278,7 +297,7 @@ jcas_simulator/              Simulator package
   scheduling.py                Cyclic TDD scheduler
   metrics.py                   Association ratio and Pearson correlation
   rng.py                       Per-stream seeded random-number manager
-  non_captive/                 Supplied non-captive tracking model
+  non_captive_toy_model/       Supplied non-captive tracking model
   visualization/               Plotting (Voronoi, KDEs, association scatter plots, trajectory animation)
 ```
 

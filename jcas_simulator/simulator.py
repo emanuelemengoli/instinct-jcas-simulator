@@ -10,7 +10,10 @@ import numpy as np
 from .beamforming import DirectionalSectorBeamformer, UnityBeamformer
 from .communication import LindleyQueue
 from .config import RegionConfig, SimulationConfig
-from .non_captive import NonCaptiveSimulationResult, run_supplied_non_captive_model
+from .non_captive_toy_model import (
+    NonCaptiveToyModelSimulationResult,
+    run_supplied_non_captive_toy_model,
+)
 from .filtering import ExtendedKalmanFilter, KalmanFilter
 from .geometry import distance, toroidal_displacement, wrap_state
 from .metrics import association_ratio, pearson_correlation
@@ -516,7 +519,7 @@ class LargeScaleJCASSimulator:
         )
         association = self._association_metrics(bs_metrics)
         return LargeScaleSimulationResult(
-            mode="captive",
+            mode="large_scale_simulator",
             network=self.network,
             queue_workloads=queue_workloads,
             communication_sinr=comm_sinr,
@@ -676,8 +679,8 @@ class JCASSimulator:
         self.observation_factory = observation_factory
         self.channel = channel
 
-    def run(self) -> LargeScaleSimulationResult | NonCaptiveSimulationResult:
-        if self.config.operation_mode == "captive":
+    def run(self) -> LargeScaleSimulationResult | NonCaptiveToyModelSimulationResult:
+        if self.config.operation_mode == "large_scale_simulator":
             return LargeScaleJCASSimulator(
                 self.config,
                 ue_dynamics_factory=self.ue_dynamics_factory,
@@ -685,7 +688,7 @@ class JCASSimulator:
                 observation_factory=self.observation_factory,
                 channel=self.channel,
             ).run()
-        if self.config.operation_mode == "non_captive":
-            rng = RNGManager(self.config.master_seed).generator("non_captive:model")
-            return run_supplied_non_captive_model(self.config.non_captive, rng)
+        if self.config.operation_mode == "non_captive_toy_model":
+            rng = RNGManager(self.config.master_seed).generator("non_captive_toy_model:model")
+            return run_supplied_non_captive_toy_model(self.config.non_captive_toy_model, rng)
         raise ValueError(f"unsupported operation mode: {self.config.operation_mode}")

@@ -24,7 +24,7 @@ from jcas_simulator import (
     JCASSimulator,
     MotionConfig,
     NetworkConfig,
-    NonCaptiveConfig,
+    NonCaptiveToyModelConfig,
     ObservationConfig,
     PointProcessConfig,
     PopulationConfig,
@@ -38,7 +38,7 @@ from jcas_simulator.visualization import (
     plot_covariance_trace_kde,
     plot_filter_queue_association_scatter,
     plot_interference_association_scatter,
-    plot_non_captive_estimation_comparison,
+    plot_non_captive_toy_model_estimation_comparison,
     plot_sinr_association_scatter,
     plot_sinr_kde,
     plot_voronoi_network,
@@ -89,6 +89,7 @@ def run_large_scale(
     side_lobe_gain_db: float,
     log2_beams: int,
     tdd_enabled: bool,
+    handover_enabled: bool = False,
 ):
     motion = MotionConfig(
         kind=motion_kind,
@@ -181,12 +182,13 @@ def run_large_scale(
         )
         if tdd_enabled
         else TDDConfig(),
+        handover_enabled=handover_enabled,
     )
     return JCASSimulator(config).run()
 
 
 @st.cache_data(show_spinner=False)
-def run_non_captive(
+def run_non_captive_toy_model(
     seed: int,
     horizon: int,
     smoothing_window: int,
@@ -198,8 +200,8 @@ def run_non_captive(
 ):
     config = SimulationConfig(
         master_seed=seed,
-        operation_mode="non_captive",
-        non_captive=NonCaptiveConfig(
+        operation_mode="non_captive_toy_model",
+        non_captive_toy_model=NonCaptiveToyModelConfig(
             horizon=horizon,
             smoothing_window=smoothing_window,
             delta=delta,
@@ -231,7 +233,7 @@ def _latex_escape(value: object) -> str:
 
 def params_to_latex(mode: str, params: dict[str, object]) -> str:
     """Render a run's parameters as a small standalone, compilable LaTeX document."""
-    scenario = "Captive scenario" if mode == "captive" else "Non-captive toy model"
+    scenario = "Large-scale simulator" if mode == "large_scale_simulator" else "Non-captive toy model"
     rows = "\n".join(
         f"{_latex_escape(label)} & {_latex_escape(value)} \\\\" for label, value in params.items()
     )
@@ -420,9 +422,9 @@ with st.sidebar:
     st.header("Scenario")
     operation_mode = st.radio(
         "Simulation strategy",
-        ["captive", "non_captive"],
-        format_func=lambda m: "Captive scenario"
-        if m == "captive"
+        ["large_scale_simulator", "non_captive_toy_model"],
+        format_func=lambda m: "Large-scale simulator"
+        if m == "large_scale_simulator"
         else "Non-captive toy model",
     )
     seed = st.number_input(
@@ -433,7 +435,7 @@ with st.sidebar:
         help="Controls the randomness of this run. The same seed always reproduces the exact same result.",
     )
 
-    if operation_mode == "captive":
+    if operation_mode == "large_scale_simulator":
         st.subheader("Network")
         width = st.slider("Region width (m)", 50.0, 5000.0, 1500.0, step=50.0)
         height = st.slider("Region height (m)", 50.0, 5000.0, 1500.0, step=50.0)
@@ -599,33 +601,63 @@ with st.sidebar:
             )
 
         st.subheader("Mobility")
+        st.info(
+            "**Handover.** The ρ-persistent random walk lets entities roam across cell "
+            "boundaries and re-associate to a new base station, so it is the model used "
+            "for handover scenarios. The captive Gauss-Markov model contracts each entity "
+            "toward its serving base station and is used to model the no-handover (captive) case."
+        )
         motion_kind = st.selectbox(
             "Movement pattern",
-            ["static", "gauss_markov", "rho_random_walk"],
+            ["static", "captive_gauss_markov", "rho_random_walk"],
             index=1,
             format_func=lambda m: {
                 "static": "Stationary (no movement)",
-                "gauss_markov": "Gauss-Markov process",
+                "captive_gauss_markov": "Captive Gauss-Markov process",
                 "rho_random_walk": "ρ-persistent random walk",
             }[m],
         )
+        handover_enabled = st.checkbox(
+            "Enable handover between cells",
+            value=False,
+            disabled=motion_kind != "rho_random_walk",
+            help="Re-associate each entity to its nearest base station as it moves. "
+            "Available only with the ρ-persistent random walk; the captive Gauss-Markov "
+            "model keeps every entity bound to its serving BS.",
+        )
+        if motion_kind != "rho_random_walk":
+            handover_enabled = False
+        motion_is_static = motion_kind == "static"
+        # rho = 1 turns the captive Gauss-Markov contraction into a plain random
+        # walk, so the persistence is capped strictly below 1 for that model.
+        rho_max = 0.99 if motion_kind == "captive_gauss_markov" else 1.0
         rho = st.slider(
             "Movement persistence",
             0.0,
-            1.0,
-            0.9,
+            rho_max,
+            min(0.9, rho_max),
             step=0.01,
-            help="How much each step's movement continues the previous step's. 0 = completely "
-            "random every step; close to 1 = smooth, realistic movement that keeps going the same way.",
+            disabled=motion_is_static,
+            help="Not used when movement is stationary."
+            if motion_is_static
+            else "How much each step's movement continues the previous step's. 0 = completely "
+            "random every step; close to 1 = smooth, realistic movement that keeps going the same "
+            "way. Capped below 1 for the captive Gauss-Markov model, which needs a contraction "
+            "toward the serving base station.",
         )
         process_noise_std = st.slider(
             "Movement randomness",
             0.0,
-            5.0,
+            30.0,
             0.2,
-            step=0.05,
-            help="The amount of random \u2018jitter\u2019 added to movement at each step.",
+            step=0.1,
+            disabled=motion_is_static,
+            help="Not used when movement is stationary."
+            if motion_is_static
+            else "The amount of random \u2018jitter\u2019 added to movement at each step.",
         )
+        if motion_is_static:
+            rho, process_noise_std = 0.0, 0.0
 
         with st.expander("Mobility: Advanced parameters"):
             state_dim_forced = motion_kind == "rho_random_walk"
@@ -645,10 +677,10 @@ with st.sidebar:
                 initial_speed_min_mps, initial_speed_max_mps = st.slider(
                     "Initial speed range (m/s)", 0.0, 20.0, (0.0, 0.0), step=0.5
                 )
-                if motion_kind == "gauss_markov":
+                if motion_kind == "captive_gauss_markov":
                     st.info(
-                        "With the Gauss-Markov model the initial speed is only drawn "
-                        "into the tracked state, so it affects parameter estimation "
+                        "With the captive Gauss-Markov model the initial speed is only "
+                        "drawn into the tracked state, so it affects parameter estimation "
                         "and not the real motion. Speed selection affects motion only "
                         "in the ρ-persistent random walk."
                     )
@@ -811,7 +843,7 @@ with st.sidebar:
 
 if run_clicked:
     try:
-        if operation_mode == "captive":
+        if operation_mode == "large_scale_simulator":
             effective_channel = (
                 "exponential" if beamforming_enabled and channel_model == "rt" else channel_model
             )
@@ -861,6 +893,7 @@ if run_clicked:
                     side_lobe_gain_db=side_lobe_gain_db,
                     log2_beams=log2_beams,
                     tdd_enabled=tdd_enabled,
+                    handover_enabled=handover_enabled,
                 )
             run_params = {
                 "Random seed": seed,
@@ -909,10 +942,11 @@ if run_clicked:
                 "Signal leakage elsewhere (dB)": side_lobe_gain_db,
                 "Number of beams": 2 ** log2_beams,
                 "Alternate communication & sensing (TDD)": tdd_enabled,
+                "Handover between cells": handover_enabled,
             }
         else:
             with st.spinner("Running non-captive toy model simulation..."):
-                result = run_non_captive(
+                result = run_non_captive_toy_model(
                     seed,
                     nc_horizon,
                     nc_smoothing,
@@ -943,7 +977,7 @@ result_mode = st.session_state.get("result_mode")
 
 if result is None:
     st.info("Configure a scenario in the sidebar, then click **Run simulation**.")
-elif result_mode == "captive":
+elif result_mode == "large_scale_simulator":
     collected_images: list[tuple[str, bytes]] = []
     tabs = st.tabs(["Network", "SINR & filtering", "Association", "Trajectory animation", "Summary"])
 
@@ -1051,22 +1085,22 @@ elif result_mode == "captive":
             key="download_params_tex",
         )
 
-else:  # non_captive
+else:  # non_captive_toy_model
     collected_images = []
     tabs = st.tabs(["Estimation comparison", "SINR & covariance", "Summary"])
 
     with tabs[0]:
-        fig, _ = plot_non_captive_estimation_comparison(result, show=False)
-        show(fig, "non_captive_estimation_comparison", collected_images)
+        fig, _ = plot_non_captive_toy_model_estimation_comparison(result, show=False)
+        show(fig, "non_captive_toy_model_estimation_comparison", collected_images)
 
     with tabs[1]:
         col1, col2 = st.columns(2)
         with col1:
             fig, _ = plot_sinr_kde(result, steady_state='auto', show=False)
-            show(fig, "non_captive_sinr_kde", collected_images)
+            show(fig, "non_captive_toy_model_sinr_kde", collected_images)
         with col2:
             fig, _ = plot_covariance_trace_kde(result, steady_state='auto', show=False)
-            show(fig, "non_captive_covariance_trace_kde", collected_images)
+            show(fig, "non_captive_toy_model_covariance_trace_kde", collected_images)
 
     with tabs[2]:
         n_steps = int(result.true_state.shape[1])

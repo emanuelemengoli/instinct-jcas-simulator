@@ -89,7 +89,7 @@ class LinearGaussianDynamics(DynamicsModel):
         return self.covariance.copy()
 
 
-class GaussMarkovDynamics(LinearGaussianDynamics):
+class CaptiveGaussMarkovDynamics(LinearGaussianDynamics):
     """Stable AR(1) dynamics, optionally centred on a serving BS.
 
     In toroidal mode, a BS-centred AR(1) acts on the minimum-image displacement
@@ -170,8 +170,8 @@ def make_dynamics(
 ) -> DynamicsModel:
     if config.kind == "static":
         return StaticDynamics(config.state_dim, region=region)
-    if config.kind == "gauss_markov":
-        return GaussMarkovDynamics(config, center=center, region=region)
+    if config.kind == "captive_gauss_markov":
+        return CaptiveGaussMarkovDynamics(config, center=center, region=region)
     if config.kind == "rho_random_walk":
         return RhoRandomWalkDynamics(config, dt=dt, region=region)
     raise ValueError(f"unsupported motion model: {config.kind}")

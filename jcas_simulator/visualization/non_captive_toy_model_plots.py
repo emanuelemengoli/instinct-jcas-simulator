@@ -6,12 +6,12 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ..non_captive import NonCaptiveSimulationResult
+from ..non_captive_toy_model import NonCaptiveToyModelSimulationResult
 from ._common import finish_figure
 
 
-def plot_non_captive_estimation_comparison(
-    result: NonCaptiveSimulationResult,
+def plot_non_captive_toy_model_estimation_comparison(
+    result: NonCaptiveToyModelSimulationResult,
     *,
     ax=None,
     save_path: str | Path | None = None,
@@ -23,7 +23,7 @@ def plot_non_captive_estimation_comparison(
     ``smooth_err_P``, ``smooth_err_P_bl`` and ``X_rel[0,:]``.  No simulation,
     SNR, filtering, or RNG operation is performed here.
     """
-    if not isinstance(result, NonCaptiveSimulationResult) or result.mode != "non_captive":
+    if not isinstance(result, NonCaptiveToyModelSimulationResult) or result.mode != "non_captive_toy_model":
         raise ValueError("non-captive estimation comparison requires a non-captive result")
 
     if ax is None:

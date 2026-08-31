@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from ..non_captive import NonCaptiveSimulationResult
+from ..non_captive_toy_model import NonCaptiveToyModelSimulationResult
 from ..simulator import LargeScaleSimulationResult
 from ._common import (
     deterministic_subsample,
@@ -183,7 +183,7 @@ def _plot_seaborn_kde(
 
 
 def plot_sinr_kde(
-    result: LargeScaleSimulationResult | NonCaptiveSimulationResult,
+    result: LargeScaleSimulationResult | NonCaptiveToyModelSimulationResult,
     *,
     series: str = "both",
     steady_state: SteadyState = 0.4,
@@ -237,9 +237,9 @@ def plot_sinr_kde(
                 time_slice=time_slice,
             )
             selected.append(("Sensing SINR", samples, detected))
-    elif isinstance(result, NonCaptiveSimulationResult):
+    elif isinstance(result, NonCaptiveToyModelSimulationResult):
         aliases = {
-            "jcas": "jcas", "non_captive": "jcas",
+            "jcas": "jcas", "non_captive_toy_model": "jcas",
             "sensing_only": "sensing_only", "sensing": "sensing_only",
             "both": "both",
         }
@@ -288,7 +288,7 @@ def plot_sinr_kde(
 
 
 def plot_covariance_trace_kde(
-    result: LargeScaleSimulationResult | NonCaptiveSimulationResult,
+    result: LargeScaleSimulationResult | NonCaptiveToyModelSimulationResult,
     *,
     steady_state: SteadyState = 0.4,
     time_slice: slice | None = None,
@@ -328,7 +328,7 @@ def plot_covariance_trace_kde(
             cumulative=cumulative,
             grid_points=grid_points,
         )
-    elif isinstance(result, NonCaptiveSimulationResult):
+    elif isinstance(result, NonCaptiveToyModelSimulationResult):
         jcas_trace = np.trace(result.jcas_covariance, axis1=0, axis2=1)
         baseline_trace = np.trace(result.sensing_only_covariance, axis1=0, axis2=1)
         for label, values in (
@@ -361,7 +361,7 @@ def plot_covariance_trace_kde(
 
 
 def plot_workload_kde(
-    result: LargeScaleSimulationResult | NonCaptiveSimulationResult,
+    result: LargeScaleSimulationResult | NonCaptiveToyModelSimulationResult,
     *,
     steady_state: SteadyState = 0.4,
     time_slice: slice | None = None,
