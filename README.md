@@ -8,7 +8,7 @@ channel model and each SO is tracked with a Kalman (KF) or Extended Kalman
 filter (EKF). The simulator is intended for the controlled study of how the communication and
 sensing subsystems of a shared network interact.
 
-![JCAS network realization and Voronoi tessellation](docs/images/network_voronoi.png)
+<img src="docs/images/network_voronoi.png" alt="JCAS network realization and Voronoi tessellation" width="480">
 
 *A single network realization on the flat torus — BS, UE and SO — with the induced Voronoi tessellation that defines cell coverage.*
 
@@ -247,9 +247,18 @@ Every figure for a run is also available from the application's export panel.
 
 ### Steady-state distributions
 
-| Communication / sensing SINR | Filter covariance trace | Queue workload |
-| :---: | :---: | :---: |
-| ![Communication and sensing SINR KDE](docs/images/sinr_kde.png) | ![Filter covariance-trace KDE](docs/images/covariance_trace_kde.png) | ![Queue-workload KDE](docs/images/workload_kde.png) |
+<table>
+  <tr>
+    <td align="center">Communication / sensing SINR</td>
+    <td align="center">Filter covariance trace</td>
+    <td align="center">Queue workload</td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/sinr_kde.png" alt="Communication and sensing SINR KDE" width="300"></td>
+    <td><img src="docs/images/covariance_trace_kde.png" alt="Filter covariance-trace KDE" width="300"></td>
+    <td><img src="docs/images/workload_kde.png" alt="Queue-workload KDE" width="300"></td>
+  </tr>
+</table>
 
 Kernel density estimates pooled across entities in the steady-state window: the per-link
 communication and sensing SINR (the monostatic sensing return is far weaker than the
@@ -259,7 +268,7 @@ detected, the full run is shown instead.
 
 ### Queue–covariance association
 
-![Queue workload versus filter covariance trace, with association ratio](docs/images/filter_queue_association.png)
+<img src="docs/images/filter_queue_association.png" alt="Queue workload versus filter covariance trace, with association ratio" width="720">
 
 Per-base-station mean queue workload against mean filter covariance trace. Here the association
 ratio `A(W, Tr(Σ)) = E[W·Tr(Σ)] / (E[W]·E[Tr(Σ)]) ≈ 1.006 > 1`, indicating that communication
@@ -267,9 +276,16 @@ congestion and sensing uncertainty co-increase weakly across the network.
 
 ### Trajectory animations
 
-| Captive Gauss–Markov | ρ-persistent random walk |
-| :---: | :---: |
-| ![Captive Gauss–Markov entity trajectories](_images/trajectory_animation_gm.gif) | ![ρ-persistent random-walk entity trajectories](_images/trajectory_animation_rw.gif) |
+<table>
+  <tr>
+    <td align="center">Captive Gauss–Markov</td>
+    <td align="center">ρ-persistent random walk</td>
+  </tr>
+  <tr>
+    <td><img src="_images/trajectory_animation_gm.gif" alt="Captive Gauss–Markov entity trajectories" width="460"></td>
+    <td><img src="_images/trajectory_animation_rw.gif" alt="ρ-persistent random-walk entity trajectories" width="460"></td>
+  </tr>
+</table>
 
 Entity trajectories over a run. Under **captive Gauss–Markov** (`captive_gauss_markov`, left)
 each entity is contracted toward its serving base station and stays within its cell — the
