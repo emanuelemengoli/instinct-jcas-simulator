@@ -247,7 +247,7 @@ Every figure for a run is also available from the application's export panel.
 Kernel density estimates pooled across entities in the steady-state window: the per-link
 communication and sensing SINR (the monostatic sensing return is far weaker than the
 communication link), the Kalman/Extended-Kalman error-covariance trace `Tr(Σ)` used as the
-sensing-uncertainty metric, and the per-cell Lindley-queue workload. Where a steady state is not
+sensing-uncertainty metric and the per-cell Lindley-queue workload. Where a steady state is not
 detected, the full run is shown instead.
 
 ### Queue–covariance association
