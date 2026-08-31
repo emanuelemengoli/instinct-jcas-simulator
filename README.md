@@ -270,7 +270,9 @@ detected, the full run is shown instead.
 
 ### Queue–covariance association
 
-<img src="docs/images/filter_queue_association.png" alt="Queue workload versus filter covariance trace, with association ratio" width="560">
+<p align="center">
+  <img src="docs/images/filter_queue_association.png" alt="Queue workload versus filter covariance trace, with association ratio" width="560">
+</p>
 
 Per-base-station mean queue workload against mean filter covariance trace. Here the association
 ratio `A(W, Tr(Σ)) = E[W·Tr(Σ)] / (E[W]·E[Tr(Σ)]) ≈ 1.006 > 1`, indicating that communication
