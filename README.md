@@ -201,7 +201,7 @@ each shown in the application under the label below.
 | `operation_mode`         | Application label         | Description |
 | ------------------------ | ------------------------- | ----------- |
 | `large_scale_simulator`  | **Large-scale simulator** | The full large-scale network simulator described above. Returns a `LargeScaleSimulationResult`. |
-| `non_captive_toy_model`  | **Non-captive toy model** | A supplied, simplified single-track experiment that compares JCAS tracking against a sensing-only baseline along a fixed line of BSs. It contains no ray-traced channel, sector beamforming, or TDD frame. Returns a `NonCaptiveToyModelSimulationResult`. |
+| `non_captive_toy_model`  | **Non-captive toy model** | A supplied, simplified single-track experiment that compares JCAS tracking against a sensing-only baseline along a fixed line of BSs [[3]](#references). It contains no ray-traced channel, sector beamforming, or TDD frame. Returns a `NonCaptiveToyModelSimulationResult`. |
 
 ## Configuration
 
@@ -362,3 +362,15 @@ This project is released under the MIT License. The full text is given in the
 2. INSTINCT — Joint Sensing and Communication for Future Connectivity, Barkhausen
    Institut.
    <https://www.barkhauseninstitut.org/en/instinct-joint-sensing-and-communication-for-future-connectivity>
+
+3. A. Balakrishnan, N. Soprano-Loto and F. Baccelli, "Kalman Filtering for Sensing Aided
+   Communication to Mobile Users in Large Cellular Networks," 2026.
+   <https://hal.science/hal-05612297>
+
+   ```bibtex
+   @article{balakrishnan2026kalman,
+     title={Kalman Filtering for Sensing Aided Communication to Mobile Users in Large Cellular Networks},
+     author={Balakrishnan, Ashutosh and Soprano-Loto, Nahuel and Baccelli, Fran{\c{c}}ois},
+     year={2026}
+   }
+   ```
